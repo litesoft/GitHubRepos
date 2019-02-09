@@ -1,3 +1,7 @@
 /.project
 .idea
 target
+/.attach_pid32406
+/.attach_pid6975
+/credentials.properties
+/dependency-reduced-pom.xml
