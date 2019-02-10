@@ -38,6 +38,17 @@ public class GitHubRepos {
 
     Seats zSeats = generateSeats( zCLIsupport.getRemainingArgs() );
 
+    if (zCLIsupport.isSeatsOnly()) {
+      if ( zSeats.isEmpty() ) {
+        throw new IllegalArgumentException( "'-seatsOnly' specified without any Seats!" );
+      }
+      zLogger.log( "Seats:" );
+      for ( String zSeat : zSeats.getSeats() ) {
+        zLogger.log( "    " + zCLIsupport.getSeatsOnlyPrefix() + zSeat );
+      }
+      System.exit( 0 );
+    }
+
     Service zService = zCLIsupport.getService();
 
     if ( zLegacy ) {

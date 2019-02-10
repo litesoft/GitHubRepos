@@ -15,10 +15,16 @@ import org.litesoft.minimal_ioutils.Logger;
 public class Service {
   private final RepositoryAccessor mRepositoryAccessor;
   private final Map<String, Repository> mRepositories;
+  private boolean mDryRun; // default False
 
   public Service( @NotNull RepositoryAccessor pRepositoryAccessor ) {
     mRepositoryAccessor = NotNull.AssertArgument.namedValue( "RepositoryAccessor", pRepositoryAccessor );
     mRepositories = mRepositoryAccessor.getRepositories();
+  }
+
+  /* package friendly */
+  void setDryRun( boolean pDryRun ) {
+    mDryRun = pDryRun;
   }
 
   @NotEmpty
@@ -62,7 +68,9 @@ public class Service {
 
   private void deleteRepo( Logger pLogger, Repository pRepository ) {
     pLogger.log( "   Deleting: " + pRepository.getName() );
-    pRepository.delete();
+    if ( !mDryRun ) {
+      pRepository.delete();
+    }
   }
 
   @SuppressWarnings("UnusedReturnValue")
@@ -82,11 +90,14 @@ public class Service {
     if ( pCreatableFile != null ) {
       zBuilder.initWithDescriptionAsReadMe();
     }
-    Repository zRepo = zBuilder.create();
+    Repository zRepo = mDryRun ? null : zBuilder.create();
 
     if ( pCreatableFile != null ) {
       pLogger.log( "       Adding: " + pCreatableFile.getFilePath() );
-      zRepo.createFile( pCreatableFile );
+      if ( !mDryRun ) {
+        //noinspection ConstantConditions
+        zRepo.createFile( pCreatableFile );
+      }
     }
 
     return zRepo;

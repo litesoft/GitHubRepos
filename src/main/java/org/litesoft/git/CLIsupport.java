@@ -17,7 +17,8 @@ public class CLIsupport {
   private final Git mGit;
   private final List<String> mOrganizationNames;
   private Service mService;
-  private boolean mClear, mRemove; // Flags: false initially
+  private String mSeatsOnlyPrefix;
+  private boolean mDryRun, mClear, mRemove; // Flags: false initially
 
   public CLIsupport( @Nullable Logger pLogger, @Nullable String[] pArgs, @NotNull Git pGit ) {
     mLogger = Logger.deNull( pLogger );
@@ -39,6 +40,18 @@ public class CLIsupport {
 
   public Service getService() {
     return mService;
+  }
+
+  public boolean isSeatsOnly() {
+    return (mSeatsOnlyPrefix != null);
+  }
+
+  public String getSeatsOnlyPrefix() {
+    return mSeatsOnlyPrefix;
+  }
+
+  public boolean isDryRun() {
+    return mDryRun;
   }
 
   public boolean isClear() {
@@ -68,6 +81,13 @@ public class CLIsupport {
   }
 
   public void processArgFlags() {
+    if ( checkArgs( "-seatsonly" ) ) {
+      mSeatsOnlyPrefix = NotNull.ConstrainTo.valueOr( optionalArg(), "");
+      return;
+    }
+
+    mDryRun = checkArgs( "-dryrun" );
+
     if ( checkArgs( "-orgs" ) ) {
       mLogger.log( "\nOrgs (" + mOrganizationNames.size() + "):" );
       for ( String zName : mOrganizationNames ) {
@@ -79,6 +99,7 @@ public class CLIsupport {
     if ( checkArgs( "-org" ) ) {
       mService = switchToOrg( optionalArg() );
     }
+    mService.setDryRun( mDryRun );
 
     if ( checkArgs( "-list" ) ) {
       List<String> zRepositoryNames = mService.getRepositoryNames();
