@@ -17,8 +17,8 @@ public class CLIsupport {
   private final Git mGit;
   private final List<String> mOrganizationNames;
   private Service mService;
-  private String mSeatsOnlyPrefix;
-  private boolean mDryRun, mClear, mRemove; // Flags: false initially
+  private String mSeatsOnlyPrefix, mSeatsOnlySuffix = "";
+  private boolean mExecute, mDryRun, mClear, mRemove; // Flags: false initially
 
   public CLIsupport( @Nullable Logger pLogger, @Nullable String[] pArgs, @NotNull Git pGit ) {
     mLogger = Logger.deNull( pLogger );
@@ -50,6 +50,14 @@ public class CLIsupport {
     return mSeatsOnlyPrefix;
   }
 
+  public String getSeatsOnlySuffix() {
+    return mSeatsOnlySuffix;
+  }
+
+  public boolean isExecute() {
+    return mExecute;
+  }
+
   public boolean isDryRun() {
     return mDryRun;
   }
@@ -70,23 +78,39 @@ public class CLIsupport {
     return mArgs.isEmpty() ? null : mArgs.remove( 0 );
   }
 
-  public boolean checkArgs( String pFlag ) {
+  public boolean checkArgs( String... pFlags ) {
     if ( !mArgs.isEmpty() ) {
-      if ( pFlag.equalsIgnoreCase( mArgs.get( 0 ) ) ) {
-        mArgs.remove( 0 );
-        return true;
+      for ( String zFlag : pFlags ) {
+        if ( zFlag.equalsIgnoreCase( mArgs.get( 0 ) ) ) {
+          mArgs.remove( 0 );
+          return true;
+        }
       }
     }
     return false;
   }
 
   public void processArgFlags() {
-    if ( checkArgs( "-seatsonly" ) ) {
-      mSeatsOnlyPrefix = NotNull.ConstrainTo.valueOr( optionalArg(), "");
-      return;
-    }
 
     mDryRun = checkArgs( "-dryrun" );
+    mExecute = checkArgs( "-exec" );
+
+    boolean zSeatsOnlySuffix = checkArgs( "-sosuffix", "-sos" );
+    if ( zSeatsOnlySuffix ) {
+      mSeatsOnlySuffix = NotNull.ConstrainTo.valueOr( optionalArg(), "" );
+    }
+
+    boolean zSeatsOnly = checkArgs( "-seatsonly", "-so" );
+    if ( zSeatsOnly ) {
+      mSeatsOnlyPrefix = NotNull.ConstrainTo.valueOr( optionalArg(), "" );
+      return;
+    }
+    if ( mExecute ) {
+      exitError( "-soSuffix indicted w/o -SeatsOnly" );
+    }
+    if ( zSeatsOnlySuffix ) {
+      exitError( "-soSuffix indicted w/o -SeatsOnly" );
+    }
 
     if ( checkArgs( "-orgs" ) ) {
       mLogger.log( "\nOrgs (" + mOrganizationNames.size() + "):" );
@@ -110,8 +134,8 @@ public class CLIsupport {
       System.exit( 0 );
     }
 
-    mClear = checkArgs( "-clear" );
-    mRemove = checkArgs( "-remove" );
+    mClear = checkArgs( "-clear", "-clr" );
+    mRemove = checkArgs( "-remove", "-rm" );
   }
 
   private Service switchToOrg( @Nullable String pOrg ) {
@@ -127,8 +151,12 @@ public class CLIsupport {
     return new Service( zOrganization );
   }
 
-  private void exitError( String pMessage ) {
+  public void exitError( String pMessage ) {
+    exitError( 1, pMessage );
+  }
+
+  public void exitError( int pExitValue, String pMessage ) {
     System.err.println( "\n***** " + pMessage + " *****" );
-    System.exit( 1 );
+    System.exit( pExitValue );
   }
 }

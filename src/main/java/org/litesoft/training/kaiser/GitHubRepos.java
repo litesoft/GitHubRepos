@@ -1,7 +1,9 @@
 package org.litesoft.training.kaiser;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.litesoft.git.CLIsupport;
 import org.litesoft.git.CreatableFile;
@@ -21,7 +23,7 @@ public class GitHubRepos {
   private static final String CICD = "cicd";
 
   public static void main( String[] args )
-          throws IOException {
+          throws Exception {
     PasswordCredentials zCredentials = PasswordCredentialsPropertiesLoader.load( "credentials.properties" );
 
     Logger zLogger = Logger.createFrom( System.out );
@@ -38,13 +40,19 @@ public class GitHubRepos {
 
     Seats zSeats = generateSeats( zCLIsupport.getRemainingArgs() );
 
-    if (zCLIsupport.isSeatsOnly()) {
+    if ( zCLIsupport.isSeatsOnly() ) {
       if ( zSeats.isEmpty() ) {
         throw new IllegalArgumentException( "'-seatsOnly' specified without any Seats!" );
       }
       zLogger.log( "Seats:" );
       for ( String zSeat : zSeats.getSeats() ) {
-        zLogger.log( "    " + zCLIsupport.getSeatsOnlyPrefix() + zSeat );
+        String zGenerated = zCLIsupport.getSeatsOnlyPrefix() + zSeat + zCLIsupport.getSeatsOnlySuffix();
+        if ( !zCLIsupport.isExecute() ) {
+          zLogger.log( "    " + zGenerated );
+        } else {
+          zLogger.log( "    Executing: " + zGenerated );
+          execute( zCLIsupport, zGenerated );
+        }
       }
       System.exit( 0 );
     }
@@ -142,50 +150,35 @@ public class GitHubRepos {
 //
 //    System.out.println( "All: " + zLitesoftRepos.size() );
 //
-//    Git zGit = new GitImpl( zGitHub );
-//
-//    System.out.println( "Mine: " + zGit.getRepositories().size() );
-//
-//    System.out.println( "Other's: " + zGit.getOrganization( "litesoft-other" ).getRepositories().size() );
-//
-//    List<String> zMyOrganizations = zGit.getOrganizationNames();
-//    System.out.println( "MyOrganizations: " + zMyOrganizations );
-//
-//    Organization zOrganization = zGit.getOrganization( "litesoft-other" );
-//
-//    Map<String, Repository> zRepositories = zOrganization.getRepositories();
-//    for ( String zKey : zRepositories.keySet() ) {
-//      System.out.println( "   " + zKey + " | " + zRepositories.get( zKey ).getFullName() );
-//    }
-//
-//    Repository repo;
-//
-//    repo = zOrganization.createRepository( "cicdA4" )
-//            .description( "Continuous Integration and Continuous Delivery for Student A4" )
-//            .create();
-//    System.out.println( "Created: " + repo );
-//
-//    repo = zOrganization.createRepository( "configA4" )
-//            .description( "Configuration for Student A4" )
-//            .initWithDescriptionAsReadMe()
-//            .create();
-//    System.out.println( "Created: " + repo );
-//
-//    CreatableFile zCreatableFile = repo
-//            .createFileBuilder( "config/dev/application-dev.yml" )
-//            .textFileContents(
-//                    "APP_CONFIG:\n" +
-//                    "  systemPwd: \"!di123$?\"\n" +
-//                    "logging:\n" +
-//                    "  level:\n" +
-//                    "    com.example: ERROR\n" )
-//            .build( "With application-dev.yml" );
-//    repo.createFile( zCreatableFile );
-//
-//    repo = zRepositories.get( "configA1" );
-//
-//    repo.delete();
-//
 //    repo.addCollaborators(github.getUser("abayer"),github.getUser("rtyler"));  }
 //  }
+
+  private static void execute( CLIsupport pCLIsupport, String pGenerated )
+          throws IOException, InterruptedException {
+    if ( pCLIsupport.isDryRun() ) {
+      pGenerated = "echo DryRun: " + pGenerated;
+    }
+    Process zProcess = new ProcessBuilder( toListSplitSP( pGenerated ) ).inheritIO().start();
+    for ( int zSecs = 30; zSecs > 0; zSecs-- ) {
+      boolean zFinished = zProcess.waitFor( 1, TimeUnit.SECONDS );
+      if ( zFinished ) {
+        int zExitValue = zProcess.exitValue();
+        if ( zExitValue != 0 ) {
+          pCLIsupport.exitError( zExitValue, "ExitValue (" + zExitValue + "): " + pGenerated );
+        }
+        return;
+      }
+    }
+    pCLIsupport.exitError( "Timeout (30secs): " + pGenerated );
+  }
+
+  private static List<String> toListSplitSP( String pGenerated ) {
+    List<String> zStrings = new ArrayList<>();
+    pGenerated = pGenerated.trim();
+    for ( int zAt; -1 != (zAt = pGenerated.indexOf( ' ' )); pGenerated = pGenerated.substring( zAt + 1 ).trim() ) {
+      zStrings.add( pGenerated.substring( 0, zAt ) );
+    }
+    zStrings.add( pGenerated );
+    return zStrings;
+  }
 }
