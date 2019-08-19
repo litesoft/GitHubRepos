@@ -1,4 +1,4 @@
-package org.litesoft.training.kaiser;
+package org.litesoft.training.seat.cicdandconf;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,7 +28,8 @@ public class GitHubRepos {
 
     Logger zLogger = Logger.createFrom( System.out );
 
-    zLogger.log( "GitHubRepos V1.0 using: " + zCredentials );
+    zLogger.log( "GitHubRepos V1.1" );
+//    zLogger.log( "GitHubRepos V1.0 using: " + zCredentials );
 
     Git zGit = GitImpl.from( zCredentials );
 

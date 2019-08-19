@@ -53,7 +53,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.litesoft.training.kaiser.GitHubRepos</mainClass>
+                            <mainClass>org.litesoft.training.seat.cicdandconf.GitHubRepos</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
